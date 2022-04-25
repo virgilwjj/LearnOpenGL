@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.0.0)
+project(LearnOpenGL)
+
+add_subdirectory(third-party/glad)
+add_subdirectory(third-party/glfw)
+add_subdirectory(third-party/scope_guard)
