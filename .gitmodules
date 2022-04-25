@@ -4,3 +4,6 @@
 [submodule "third-party/glfw"]
 	path = third-party/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "third-party/scope_guard"]
+	path = third-party/scope_guard
+	url = https://github.com/Neargye/scope_guard.git
