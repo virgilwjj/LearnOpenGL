@@ -1,0 +1,230 @@
+#define GLFW_INCLUDE_NONE
+#define STB_IMAGE_IMPLEMENTATION
+#include <GLFW/glfw3.h>
+#include <cmath>
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+#include <scope_guard.hpp>
+#include <stb_image.h>
+#include <string>
+
+static const std::string window_title{"CoordinateSystems"};
+static constexpr int window_width{800};
+static constexpr int window_height{600};
+
+static const std::string texture_path = "resources/textures/container.jpg";
+
+static void error_callback(int error_code, const char *description) {
+  std::cerr << "error_code: " << error_code << " description: " << description
+            << '\n';
+}
+
+static void framebuffer_size_callback(GLFWwindow *window, int width,
+                                      int height) {
+  glViewport(0, 0, width, height);
+}
+
+static void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                         int mods) {
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+}
+
+static const std::string vertex_shader_source =
+    "#version 330 core\n"
+    "layout (location = 0) in vec3 a_position;\n"
+    "layout (location = 1) in vec2 a_tex_coord;\n"
+    "\n"
+    "uniform mat4 u_model;\n"
+    "uniform mat4 u_view;\n"
+    "uniform mat4 u_projection;\n"
+    "\n"
+    "out vec2 v_tex_coord;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "  v_tex_coord = a_tex_coord;\n"
+    "  gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);\n"
+    "}";
+
+static const std::string fragment_shader_source =
+    "#version 330 core\n"
+    "uniform sampler2D texture0;\n"
+    "\n"
+    "in vec2 v_tex_coord;\n"
+    "\n"
+    "out vec4 FragColor;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "  FragColor = texture(texture0, v_tex_coord);\n"
+    "}";
+
+int main() {
+  glfwSetErrorCallback(error_callback);
+
+  if (!glfwInit()) {
+    return 1;
+  }
+  SCOPE_EXIT { glfwTerminate(); };
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+  auto window{glfwCreateWindow(window_width, window_height,
+                               window_title.c_str(), nullptr, nullptr)};
+  if (!window) {
+    return 1;
+  }
+  SCOPE_EXIT { glfwDestroyWindow(window); };
+
+  glfwMakeContextCurrent(window);
+
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    std::cerr << "Failed to initialize OpenGL context\n";
+    return 1;
+  }
+
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetKeyCallback(window, key_callback);
+
+  GLint success;
+  constexpr GLsizei infobuffer_size{512};
+  GLchar infobuffer[infobuffer_size];
+
+  auto shader_program{glCreateProgram()};
+  SCOPE_EXIT { glDeleteProgram(shader_program); };
+
+  {
+    auto vertex_shader{glCreateShader(GL_VERTEX_SHADER)};
+    SCOPE_EXIT { glDeleteShader(vertex_shader); };
+    auto vertex_shader_code{vertex_shader_source.c_str()};
+    glShaderSource(vertex_shader, 1, &vertex_shader_code, nullptr);
+    glCompileShader(vertex_shader);
+    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(vertex_shader, infobuffer_size, nullptr, infobuffer);
+      std::cerr << infobuffer << '\n';
+    }
+
+    auto fragment_shader{glCreateShader(GL_FRAGMENT_SHADER)};
+    SCOPE_EXIT { glDeleteShader(fragment_shader); };
+    auto fragment_shader_code{fragment_shader_source.c_str()};
+    glShaderSource(fragment_shader, 1, &fragment_shader_code, nullptr);
+    glCompileShader(fragment_shader);
+    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(fragment_shader, infobuffer_size, nullptr, infobuffer);
+      std::cerr << infobuffer << '\n';
+    }
+
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+    glLinkProgram(shader_program);
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success) {
+      glGetProgramInfoLog(shader_program, infobuffer_size, nullptr, infobuffer);
+      std::cerr << infobuffer << '\n';
+    }
+  }
+
+  float vertices[] = {
+      0.5f,  0.5f,  0.0f, 1.0f, 1.0f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,
+      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f,
+  };
+
+  unsigned int indices[] = {
+      0, 1, 3, 1, 2, 3,
+  };
+
+  GLuint VAO;
+  glGenVertexArrays(1, &VAO);
+  SCOPE_EXIT { glDeleteVertexArrays(1, &VAO); };
+  glBindVertexArray(VAO);
+
+  GLuint VBO;
+  glGenBuffers(1, &VBO);
+  SCOPE_EXIT { glDeleteBuffers(1, &VBO); };
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  GLuint EBO;
+  glGenBuffers(1, &EBO);
+  SCOPE_EXIT { glDeleteBuffers(1, &EBO); };
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+               GL_STATIC_DRAW);
+
+  GLuint texture0;
+  glGenTextures(1, &texture0);
+  SCOPE_EXIT { glDeleteTextures(1, &texture0); };
+  glBindTexture(GL_TEXTURE_2D, texture0);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  {
+    GLsizei image_width, image_height;
+    int image_channels;
+    stbi_set_flip_vertically_on_load(true);
+    auto image_data{stbi_load(texture_path.c_str(), &image_width, &image_height,
+                              &image_channels, 0)};
+    if (!image_data) {
+      std::cerr << "Failed to load image\n";
+      return 1;
+    }
+    SCOPE_EXIT { stbi_image_free(image_data); };
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, image_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+
+  while (!glfwWindowShouldClose(window)) {
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(shader_program);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture0);
+
+    auto u_model{glm::mat4(1.0f)};
+    u_model =
+        glm::rotate(u_model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    auto u_model_location{glGetUniformLocation(shader_program, "u_model")};
+    glUniformMatrix4fv(u_model_location, 1, GL_FALSE, glm::value_ptr(u_model));
+
+    auto u_view{glm::mat4(1.0f)};
+    u_view = glm::translate(u_view, glm::vec3(0.0f, 0.0f, -3.0f));
+    auto u_view_location{glGetUniformLocation(shader_program, "u_view")};
+    glUniformMatrix4fv(u_view_location, 1, GL_FALSE, glm::value_ptr(u_view));
+
+    auto u_projection{glm::mat4(1.0f)};
+    u_projection = glm::perspective(glm::radians(45.0f), (float)window_width / (float)window_height, 0.1f, 100.0f);
+    auto u_projection_location{glGetUniformLocation(shader_program, "u_projection")};
+    glUniformMatrix4fv(u_projection_location, 1, GL_FALSE, glm::value_ptr(u_projection));
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+
+  return 0;
+}
