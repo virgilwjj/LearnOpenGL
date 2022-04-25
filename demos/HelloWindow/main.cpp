@@ -1,17 +1,35 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <scope_guard.hpp>
+#include <string>
 #include <iostream>
-#include <cstdlib>
 
-int main(int argc, char *argv[], char **env) {
-  glfwSetErrorCallback([](int error_code, const char *description) {
-    std::cerr << "error_code: " << error_code << " description: " << description
-              << '\n';
-  });
+static const std::string window_title{"HelloWindow"};
+static constexpr int window_width{800};
+static constexpr int window_height{600};
+
+static void error_callback(int error_code, const char *description) {
+  std::cerr << "error_code: " << error_code << " description: " << description
+            << '\n';
+}
+
+static void framebuffer_size_callback(GLFWwindow *window, int width,
+                                      int height) {
+  glViewport(0, 0, width, height);
+}
+
+static void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                         int mods) {
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+}
+
+int main() {
+  glfwSetErrorCallback(error_callback);
 
   if (!glfwInit()) {
-    return EXIT_FAILURE;
+    return 1;
   }
   SCOPE_EXIT { glfwTerminate(); };
 
@@ -22,9 +40,10 @@ int main(int argc, char *argv[], char **env) {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-  auto window{glfwCreateWindow(800, 600, "HelloWindow", nullptr, nullptr)};
+  auto window{glfwCreateWindow(window_width, window_height,
+                               window_title.c_str(), nullptr, nullptr)};
   if (!window) {
-    return EXIT_FAILURE;
+    return 1;
   }
   SCOPE_EXIT { glfwDestroyWindow(window); };
 
@@ -32,20 +51,11 @@ int main(int argc, char *argv[], char **env) {
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     std::cerr << "Failed to initialize OpenGL context\n";
-    return EXIT_FAILURE;
+    return 1;
   }
 
-  glfwSetFramebufferSizeCallback(window,
-                                 [](GLFWwindow *window, int width, int height) {
-                                   glViewport(0, 0, width, height);
-                                 });
-
-  glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode,
-                                int action, int mods) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-      glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-  });
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetKeyCallback(window, key_callback);
 
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT);
@@ -53,5 +63,5 @@ int main(int argc, char *argv[], char **env) {
     glfwPollEvents();
   }
 
-  return EXIT_SUCCESS;
+  return 0;
 }
