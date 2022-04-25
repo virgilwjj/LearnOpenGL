@@ -12,6 +12,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_link_libraries(${PROJECT_NAME} glad)
 
 target_link_libraries(${PROJECT_NAME} glfw)
-target_compile_definitions(${PROJECT_NAME} PRIVATE -D GLFW_INCLUDE_NONE)
 
 target_link_libraries(${PROJECT_NAME} scope_guard)

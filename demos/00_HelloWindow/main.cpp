@@ -1,8 +1,9 @@
-#include <glad/glad.h>
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <glad/glad.h>
+#include <iostream>
 #include <scope_guard.hpp>
 #include <string>
-#include <iostream>
 
 static const std::string window_title{"HelloWindow"};
 static constexpr int window_width{800};
@@ -58,7 +59,9 @@ int main() {
   glfwSetKeyCallback(window, key_callback);
 
   while (!glfwWindowShouldClose(window)) {
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
     glfwSwapBuffers(window);
     glfwPollEvents();
   }

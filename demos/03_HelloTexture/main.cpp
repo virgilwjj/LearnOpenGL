@@ -1,7 +1,8 @@
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
+#define GLFW_INCLUDE_NONE
 #define STB_IMAGE_IMPLEMENTATION
+#include <GLFW/glfw3.h>
 #include <cmath>
+#include <glad/glad.h>
 #include <iostream>
 #include <scope_guard.hpp>
 #include <stb_image.h>
@@ -10,6 +11,8 @@
 static const std::string window_title{"HelloTexture"};
 static constexpr int window_width{800};
 static constexpr int window_height{600};
+
+static const std::string texture_path = "resources/textures/container.jpg";
 
 static void error_callback(int error_code, const char *description) {
   std::cerr << "error_code: " << error_code << " description: " << description
@@ -53,8 +56,6 @@ static const std::string fragment_shader_source =
     "{\n"
     "  FragColor = texture(texture1, v_tex_coord);\n"
     "}";
-
-static const std::string texture_path = "resources/textures/container.jpg";
 
 int main() {
   glfwSetErrorCallback(error_callback);
@@ -140,47 +141,49 @@ int main() {
   GLuint VAO;
   glGenVertexArrays(1, &VAO);
   SCOPE_EXIT { glDeleteVertexArrays(1, &VAO); };
+  glBindVertexArray(VAO);
 
   GLuint VBO;
   glGenBuffers(1, &VBO);
   SCOPE_EXIT { glDeleteBuffers(1, &VBO); };
-
-  GLuint EBO;
-  glGenBuffers(1, &EBO);
-  SCOPE_EXIT { glDeleteBuffers(1, &EBO); };
-
-  GLuint texture;
-  glGenTextures(1, &texture);
-  SCOPE_EXIT { glDeleteTextures(1, &texture); };
-
-  glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-               GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         (void *)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
+  GLuint EBO;
+  glGenBuffers(1, &EBO);
+  SCOPE_EXIT { glDeleteBuffers(1, &EBO); };
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+               GL_STATIC_DRAW);
+
+  GLuint texture;
+  glGenTextures(1, &texture);
+  SCOPE_EXIT { glDeleteTextures(1, &texture); };
   glBindTexture(GL_TEXTURE_2D, texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  GLsizei width, height;
-  int nrChannels;
-  auto data{stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0)};
-  if (!data) {
-    std::cerr << "Failed to load image\n";
+  {
+    GLsizei image_width, image_height;
+    int image_channels;
+    auto image_data{stbi_load(texture_path.c_str(), &image_width, &image_height,
+                              &image_channels, 0)};
+    if (!image_data) {
+      std::cerr << "Failed to load image\n";
+      return 1;
+    }
+    SCOPE_EXIT { stbi_image_free(image_data); };
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, image_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
   }
-  SCOPE_EXIT { stbi_image_free(data); };
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-               GL_UNSIGNED_BYTE, data);
-  glGenerateMipmap(GL_TEXTURE_2D);
 
   while (!glfwWindowShouldClose(window)) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
