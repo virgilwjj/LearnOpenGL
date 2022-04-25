@@ -25,15 +25,15 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
-static constexpr char *vertex_shader_source =
+static const std::string vertex_shader_source =
     "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 0) in vec3 a_position;\n"
     "void main()\n"
     "{\n"
-    "  gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "  gl_Position = vec4(a_position, 1.0);\n"
     "}";
 
-static constexpr char *fragment_shader_source =
+static const std::string fragment_shader_source =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
     "void main()\n"
@@ -83,7 +83,8 @@ int main() {
   {
     auto vertex_shader{glCreateShader(GL_VERTEX_SHADER)};
     SCOPE_EXIT { glDeleteShader(vertex_shader); };
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, nullptr);
+    auto vertex_shader_code{vertex_shader_source.c_str()};
+    glShaderSource(vertex_shader, 1, &vertex_shader_code, nullptr);
     glCompileShader(vertex_shader);
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -93,7 +94,8 @@ int main() {
 
     auto fragment_shader{glCreateShader(GL_FRAGMENT_SHADER)};
     SCOPE_EXIT { glDeleteShader(fragment_shader); };
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, nullptr);
+    auto fragment_shader_code{fragment_shader_source.c_str()};
+    glShaderSource(fragment_shader, 1, &fragment_shader_code, nullptr);
     glCompileShader(fragment_shader);
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if (!success) {
