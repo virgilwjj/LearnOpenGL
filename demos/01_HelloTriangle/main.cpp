@@ -28,6 +28,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
 static const std::string vertex_shader_source =
     "#version 330 core\n"
     "layout (location = 0) in vec3 a_position;\n"
+    "\n"
     "void main()\n"
     "{\n"
     "  gl_Position = vec4(a_position, 1.0);\n"
@@ -36,6 +37,7 @@ static const std::string vertex_shader_source =
 static const std::string fragment_shader_source =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
+    "\n"
     "void main()\n"
     "{\n"
     "  FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
@@ -150,6 +152,7 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(shader_program);
+
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
