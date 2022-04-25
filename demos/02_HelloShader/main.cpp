@@ -135,7 +135,8 @@ int main() {
   };
 
   unsigned int indices[] = {
-      0, 1, 3, 1, 2, 3,
+      0, 1, 3,
+      1, 2, 3,
   };
 
   GLuint VAO;
