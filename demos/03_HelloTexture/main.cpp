@@ -170,9 +170,11 @@ int main() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
   {
     GLsizei image_width, image_height;
     int image_channels;
+    stbi_set_flip_vertically_on_load(true);
     auto image_data{stbi_load(texture_path.c_str(), &image_width, &image_height,
                               &image_channels, 0)};
     if (!image_data) {
