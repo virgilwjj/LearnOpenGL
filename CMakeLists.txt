@@ -7,3 +7,4 @@ add_subdirectory(third-party/scope_guard)
 
 add_subdirectory(demos/00_HelloWindow)
 add_subdirectory(demos/01_HelloTriangle)
+add_subdirectory(demos/02_HelloShader)
