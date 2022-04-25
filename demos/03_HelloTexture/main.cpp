@@ -11,30 +11,14 @@
 static const std::string window_title{"HelloTexture"};
 static constexpr int window_width{800};
 static constexpr int window_height{600};
-
 static const std::string texture_path = "resources/textures/container.jpg";
-
-static void error_callback(int error_code, const char *description) {
-  std::cerr << "error_code: " << error_code << " description: " << description
-            << '\n';
-}
-
-static void framebuffer_size_callback(GLFWwindow *window, int width,
-                                      int height) {
-  glViewport(0, 0, width, height);
-}
-
-static void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                         int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
-}
 
 static const std::string vertex_shader_source =
     "#version 330 core\n"
     "layout (location = 0) in vec3 a_position;\n"
     "layout (location = 1) in vec2 a_tex_coord;\n"
+    "\n"
+    "uniform sampler2D u_texture0;\n"
     "\n"
     "out vec2 v_tex_coord;\n"
     "\n"
@@ -46,7 +30,7 @@ static const std::string vertex_shader_source =
 
 static const std::string fragment_shader_source =
     "#version 330 core\n"
-    "uniform sampler2D texture1;\n"
+    "uniform sampler2D u_texture0;\n"
     "\n"
     "in vec2 v_tex_coord;\n"
     "\n"
@@ -54,13 +38,17 @@ static const std::string fragment_shader_source =
     "\n"
     "void main()\n"
     "{\n"
-    "  FragColor = texture(texture1, v_tex_coord);\n"
+    "  FragColor = texture(u_texture0, v_tex_coord);\n"
     "}";
 
 int main() {
-  glfwSetErrorCallback(error_callback);
+  glfwSetErrorCallback([](int error_code, const char *description) {
+    std::cerr << "error_code: " << error_code << " description: " << description
+              << '\n';
+  });
 
   if (!glfwInit()) {
+    std::cerr << "Failed to initialize glfw\n";
     return 1;
   }
   SCOPE_EXIT { glfwTerminate(); };
@@ -75,6 +63,7 @@ int main() {
   auto window{glfwCreateWindow(window_width, window_height,
                                window_title.c_str(), nullptr, nullptr)};
   if (!window) {
+    std::cerr << "Failed to create window\n";
     return 1;
   }
   SCOPE_EXIT { glfwDestroyWindow(window); };
@@ -86,8 +75,17 @@ int main() {
     return 1;
   }
 
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  glfwSetKeyCallback(window, key_callback);
+  glfwSetFramebufferSizeCallback(window,
+                                 [](GLFWwindow *window, int width, int height) {
+                                   glViewport(0, 0, width, height);
+                                 });
+
+  glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode,
+                                int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+  });
 
   GLint success;
   constexpr GLsizei infobuffer_size{512};
@@ -161,10 +159,10 @@ int main() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
                GL_STATIC_DRAW);
 
-  GLuint texture;
-  glGenTextures(1, &texture);
-  SCOPE_EXIT { glDeleteTextures(1, &texture); };
-  glBindTexture(GL_TEXTURE_2D, texture);
+  GLuint u_texture0;
+  glGenTextures(1, &u_texture0);
+  SCOPE_EXIT { glDeleteTextures(1, &u_texture0); };
+  glBindTexture(GL_TEXTURE_2D, u_texture0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -194,8 +192,11 @@ int main() {
     glUseProgram(shader_program);
 
     glBindVertexArray(VAO);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, u_texture0);
+
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

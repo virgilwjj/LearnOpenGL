@@ -9,27 +9,14 @@ static const std::string window_title{"HelloWindow"};
 static constexpr int window_width{800};
 static constexpr int window_height{600};
 
-static void error_callback(int error_code, const char *description) {
-  std::cerr << "error_code: " << error_code << " description: " << description
-            << '\n';
-}
-
-static void framebuffer_size_callback(GLFWwindow *window, int width,
-                                      int height) {
-  glViewport(0, 0, width, height);
-}
-
-static void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                         int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
-}
-
 int main() {
-  glfwSetErrorCallback(error_callback);
+  glfwSetErrorCallback([](int error_code, const char *description) {
+    std::cerr << "error_code: " << error_code << " description: " << description
+              << '\n';
+  });
 
   if (!glfwInit()) {
+    std::cerr << "Failed to initialize glfw\n";
     return 1;
   }
   SCOPE_EXIT { glfwTerminate(); };
@@ -44,6 +31,7 @@ int main() {
   auto window{glfwCreateWindow(window_width, window_height,
                                window_title.c_str(), nullptr, nullptr)};
   if (!window) {
+    std::cerr << "Failed to create window\n";
     return 1;
   }
   SCOPE_EXIT { glfwDestroyWindow(window); };
@@ -55,8 +43,17 @@ int main() {
     return 1;
   }
 
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  glfwSetKeyCallback(window, key_callback);
+  glfwSetFramebufferSizeCallback(window,
+                                 [](GLFWwindow *window, int width, int height) {
+                                   glViewport(0, 0, width, height);
+                                 });
+
+  glfwSetKeyCallback(window, [](GLFWwindow *window, int key, int scancode,
+                                int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+  });
 
   while (!glfwWindowShouldClose(window)) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
