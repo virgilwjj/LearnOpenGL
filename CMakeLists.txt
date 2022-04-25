@@ -4,3 +4,5 @@ project(LearnOpenGL)
 add_subdirectory(third-party/glad)
 add_subdirectory(third-party/glfw)
 add_subdirectory(third-party/scope_guard)
+
+add_subdirectory(demos/HelloWindow)
