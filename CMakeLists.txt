@@ -5,5 +5,5 @@ add_subdirectory(third-party/glad)
 add_subdirectory(third-party/glfw)
 add_subdirectory(third-party/scope_guard)
 
-add_subdirectory(demos/HelloWindow)
-add_subdirectory(demos/HelloTriangle)
+add_subdirectory(demos/00_HelloWindow)
+add_subdirectory(demos/01_HelloTriangle)
